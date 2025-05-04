@@ -4,6 +4,14 @@
 #include QMK_KEYBOARD_H
 #include <stdbool.h> // For true and false
 #include <stdint.h>  // For uint16_t and other fixed-width integer types
+#include <quantum/color.h> // For RGB Color functions
+#include <config.h>
+#include <print.h> // Debug printing
+
+// Define RGB_MATRIX_TIMEOUT in config.h if not already defined
+#ifndef RGB_MATRIX_TIMEOUT
+#define RGB_MATRIX_TIMEOUT
+#endif
 
 enum layers {
     _QWERTY,
@@ -12,20 +20,34 @@ enum layers {
     _ADJUST
 };
 
-// LED timeout settings
-#define LED_TIMEOUT 3     // Timeout in minutes
-#define LED_TIMEOUT_MS (LED_TIMEOUT * 60 * 1000)  // Convert to milliseconds
-static uint16_t idle_timer = 0;
-static bool led_on = true;
-static uint8_t saved_rgb_mode = 0;
-static uint8_t saved_rgb_val = 0;
+// LED timeout and dimming settings
+// #define LED_TIMEOUT 3     // Timeout in minutes
+// #define LED_TIMEOUT_MS (LED_TIMEOUT * 60 * 1000)  // Convert to milliseconds
+#define LED_TIMEOUT_MS (30 * 1000)  // Convert to milliseconds
+#define FADE_DURATION 5000 // Fade duration in milliseconds (2 seconds)
 
+// Dynamically calculate fade steps based on fade duration and refresh rate
+#define FADE_STEPS (FADE_DURATION / RGB_MATRIX_LED_FLUSH_LIMIT) // Calculate fade steps dynamically
+
+// Update fade interval based on dynamic fade steps
+#define FADE_INTERVAL (FADE_DURATION / FADE_STEPS)
+
+static uint32_t idle_timer = 0;      // Timer for LED timeout
+static uint32_t fade_timer = 0;      // Timer for fade animation steps
+static uint16_t fade_step = 0;        // Current fade step
+static bool led_active = true;       // Whether LEDs are active
+static bool fade_running = false;    // Whether fade animation is running
+static hsv_t led_hsv = {.h = 0, .s = 255, .v = 255};    // Initial HSV Colour
+
+
+// Boardsource Lulu specific defines
 #define RAISE MO(_RAISE)
 #define LOWER MO(_LOWER)
-#define KC_CAD	LALT(LCTL(KC_DEL))
+#define KC_CAD LALT(LCTL(KC_DEL))
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
+// region: QWERTY
 /* QWERTY
  * ,-----------------------------------------.                    ,-----------------------------------------.
  * | ESC  |   1  |   2  |   3  |   4  |   5  |                    |   6  |   7  |   8  |   9  |   0  |  -   |
@@ -48,7 +70,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,  RSFT_T(KC_RBRC),
                           KC_LGUI,    KC_LALT, LOWER, KC_SPC,           KC_ENT,   RAISE,   KC_BSPC, KC_RGUI
 ),
+// endregion
 
+// region: Lower
 /* LOWER
  * ,-----------------------------------------.                    ,-----------------------------------------.
  * |KC_GRV|  F1  |  F2  |  F3  |  F4  |  F5  |                    |  F6  |  F7  |  F8  |  F9  | F10  | F11  |
@@ -70,7 +94,9 @@ LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  
   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, KC_BSLS, _______,
                              _______, _______, _______, _______, _______, _______,  KC_DEL, _______
 ),
+// endregion
 
+// region: Raise
 /* RAISE
  * ,-----------------------------------------.                    ,------------------------------------------.
  * |      |      |      |      |      |      |                    |      |       |       |      |      |      |
@@ -92,7 +118,9 @@ LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  
   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
                              _______, _______, _______, _______, _______, _______, _______, _______
 ),
+// endregion
 
+// region: Adjust
 /* ADJUST
  * ,----------------------------------------------.                    ,-----------------------------------------.
  * |      |        |       |       |       |      |                    |      |       |      |      |      |      |
@@ -115,7 +143,9 @@ LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  
                              _______, _______, _______, _______, _______,  _______, KC_CAD, _______
   )
 };
+// endregion
 
+// region: Encoder Map
 #ifdef ENCODER_MAP_ENABLE
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
   [_QWERTY] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU),  ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
@@ -128,47 +158,124 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
 layer_state_t layer_state_set_user(layer_state_t state) {
    return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
 }
+// endregion
 
+#ifdef RGB_MATRIX_ENABLE
+// Properly handle fading the LEDs out/in
 
-// Handle dimming LEDs when idle
+void handle_rgb_timeout(void) {
+    // Check if we should start fade-out animation
+    if (led_active && !fade_running && timer_elapsed32(idle_timer) > LED_TIMEOUT_MS) {
+        // Log that the fade-out process is starting
+        uprintf("Starting fade-out process. Idle time: %lu ms\n", timer_elapsed32(idle_timer));
+
+        // Start the fade-out process
+        fade_running = true;
+        fade_step = 0;
+        fade_timer = timer_read32();
+
+        // Save the current RGB mode to restore later
+        led_hsv = rgb_matrix_get_hsv();
+        uprintf("Saved current HSV: H=%d, S=%d, V=%d\n", led_hsv.h, led_hsv.s, led_hsv.v);
+    }
+
+    // Update fade animation with easing for smooth transitions
+    if (fade_running) {
+        if (timer_elapsed32(fade_timer) > FADE_INTERVAL) {
+            fade_timer = timer_read32();
+            fade_step++;
+
+            // If fade_step within range or already at 0, continue fading
+            if ((fade_step <= FADE_STEPS) && (rgb_matrix_get_hsv().v != 0)) {
+                // Use quadratic easing for smoother fade-out
+                float progress = (float)(FADE_STEPS - fade_step) / FADE_STEPS;
+                float eased = progress * progress; // Quadratic ease-out
+                uint8_t new_value = (uint8_t)(led_hsv.v * eased);
+
+                // Log the current fade step and brightness value
+                uprintf("Fade step: %d/%d, Brightness: %d\n", fade_step, FADE_STEPS, new_value);
+
+                // Set all LEDs to get progressively dimmer
+                rgb_matrix_sethsv_noeeprom(led_hsv.h, led_hsv.s, new_value);
+            } else {
+                // Fade complete, turn off LEDs and prevent restore
+                uprintf("Fade-out complete. Turning off LEDs.\n");
+                rgb_matrix_disable_noeeprom();
+                fade_running = false;
+                led_active = false;
+                idle_timer = UINT32_MAX; // Prevent accidental restore
+            }
+        }
+    }
+}
+
+// Reset the LED state to full brightness
+void restore_rgb_state(void) {
+    // Only restore if LEDs are off or fading
+    if (!led_active || fade_running) {
+        // Cancel any ongoing fade
+        fade_running = false;
+
+        // Enable the RGB matrix
+        rgb_matrix_enable_noeeprom();
+
+        // Set mode back to what it was before fade-out
+
+        // Set brightness to full
+        rgb_matrix_sethsv_noeeprom(led_hsv.h, led_hsv.s, led_hsv.v);
+
+        led_active = true;
+
+        // Reset the idle timer
+        idle_timer = timer_read32();
+    }
+}
+#endif
+
+// Handle LED initialization
 void keyboard_post_init_user(void) {
-  // Initialize the timer
-  idle_timer = timer_read();
-  // Store initial RGB settings
-  saved_rgb_mode = rgb_matrix_get_mode();
-  saved_rgb_val = rgb_matrix_get_val();
+    // Initialize the timer
+    idle_timer = timer_read32();
+
+    #ifdef RGB_MATRIX_ENABLE
+    // Enable RGB matrix and set initial mode
+    rgb_matrix_enable();
+    led_hsv = rgb_matrix_get_hsv();
+    #endif
+
+    // Log that the keyboard initialization is complete
+    uprintf("Keyboard post-init complete. RGB Matrix enabled: %s\n",
+            #ifdef RGB_MATRIX_ENABLE
+            "Yes"
+            #else
+            "No"
+            #endif
+    );
 }
 
 // This function runs on every matrix scan
 void housekeeping_task_user(void) {
-  // Check if LEDs should fade
-  if (led_on && timer_elapsed(idle_timer) > LED_TIMEOUT_MS) {
-      // Save current settings before dimming
-      saved_rgb_mode = rgb_matrix_get_mode();
-      saved_rgb_val = rgb_matrix_get_val();
-
-      // Fade out LEDs (you can adjust based on your preference)
-      rgb_matrix_mode_noeeprom(RGB_MATRIX_SOLID_COLOR);
-      rgb_matrix_sethsv_noeeprom(HSV_WHITE);
-      rgb_matrix_set_val_noeeprom(0);  // 0 brightness = off
-
-      led_on = false;
-  }
+    #ifdef RGB_MATRIX_ENABLE
+    handle_rgb_timeout();
+    #endif
 }
 
 // Any keypress will reset the timer and restore LEDs
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  if (record->event.pressed) {
-      // Reset timer on key press
-      idle_timer = timer_read();
+    if (record->event.pressed) {
+        // Log the keycode and event
+        uprintf("Key pressed: 0x%04X\n", keycode);
 
-      // If LEDs were off, turn them back on
-      if (!led_on) {
-          // Restore saved settings
-          rgb_matrix_mode_noeeprom(saved_rgb_mode);
-          rgb_matrix_set_val_noeeprom(saved_rgb_val);
-          led_on = true;
-      }
-  }
-  return true;
+        // Reset timer on key press
+        idle_timer = timer_read32();
+
+        #ifdef RGB_MATRIX_ENABLE
+        // Restore LEDs if they were dimmed or off
+        restore_rgb_state();
+        #endif
+    } else {
+        // Log the key release event
+        uprintf("Key released: 0x%04X\n", keycode);
+    }
+    return true;
 }
