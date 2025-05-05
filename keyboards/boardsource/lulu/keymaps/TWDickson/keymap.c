@@ -1,12 +1,11 @@
-// Copyright 2022 Cole Smith <cole@boadsource.xyz>
-// SPDX-License-Identifier: GPL-2.0-or-later
-
+// keymap.c - TWDickson keymap for Boardsource Lulu keyboard
 #include QMK_KEYBOARD_H
 #include <stdbool.h> // For true and false
 #include <stdint.h>  // For uint16_t and other fixed-width integer types
 #include <quantum/color.h> // For RGB Color functions
 #include <config.h>
 #include <print.h> // Debug printing
+#include "oled_animation.h"
 
 // Define RGB_MATRIX_TIMEOUT in config.h if not already defined
 #ifndef RGB_MATRIX_TIMEOUT
@@ -272,6 +271,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         #ifdef RGB_MATRIX_ENABLE
         // Restore LEDs if they were dimmed or off
         restore_rgb_state();
+        #endif
+
+        #ifdef OLED_ENABLE
+        // Call any OLED-specific keypress handling
+        oled_process_key_press(keycode);
         #endif
     } else {
         // Log the key release event
