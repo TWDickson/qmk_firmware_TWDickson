@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "keyboards/boardsource/lulu"
+		},
+		{
+			"path": "keyboards/boardsource/lib"
 		}
 	],
 	"settings": {
@@ -17,7 +20,15 @@
 			"xstddef": "c",
 			"type_traits": "c",
 			"utility": "c",
-			"ranges": "c"
+			"ranges": "c",
+			"__config": "c",
+			"fstream": "c",
+			"future": "c",
+			"ios": "c",
+			"iosfwd": "c",
+			"locale": "c",
+			"optional": "c",
+			"string": "c"
 		}
 	}
 }
