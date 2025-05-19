@@ -161,8 +161,12 @@ void keyboard_post_init_user(void) {
 
 // Replace the housekeeping_task_user function:
 void housekeeping_task_user(void) {
-    #ifdef RGB_MATRIX_ENABLE
+    #if defined(RGB_MATRIX_ENABLE) || defined(OLED_ENABLE)
+    // Call regular RGB timeout handler
     handle_rgb_timeout();
+
+    // Call the housekeeping function for timeout_fade
+    timeout_fade_housekeeping();
     #endif
 }
 

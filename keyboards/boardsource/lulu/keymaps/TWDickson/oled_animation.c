@@ -6,6 +6,7 @@
 #include <print.h> // Debug printing
 #include <stdbool.h>
 #include "lib/oled.h"
+#include "timeout_fade.h" // Include the timeout_fade header for OLED functions
 
 unsigned int state = 0;
 
@@ -142,12 +143,25 @@ void render_rotated_layer_state(void) {
 
 // OLED task handler specific to the animation
 bool oled_task_user_animation(bool debug) {
+    if (!oled_panel_active) {
+        if (debug) {
+            printf("OLED Task User Animation - OLED is off, skipping rendering\n");
+        }
+        // Call OLED Off Again
+        oled_clear();
+        if (!is_oled_on()) {
+            oled_off();
+        }
+        return false; // Skip rendering if OLED is off
+    }
+
+
     if (debug) {
         printf("OLED Task User Animation - Debug mode: %d\n", debug);
-        printf("\t Is keyboard master: %d\n", is_keyboard_master());
     }
     static uint8_t last_layer = 255; // Initialize to an impossible layer
     uint8_t current_layer = get_highest_layer(layer_state);
+
 
     if (is_keyboard_master()) {
         if (debug) {
@@ -213,5 +227,5 @@ void render_bootmagic_status(bool status) {
 bool oled_task_user(void) {
     // Call the function from our animation file
     // printf("OLED Task User - Master: %d\n", is_keyboard_master());
-    return oled_task_user_animation(false);
+    return oled_task_user_animation(true);
 }
