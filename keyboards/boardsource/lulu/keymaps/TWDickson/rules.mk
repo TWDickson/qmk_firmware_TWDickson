@@ -20,7 +20,7 @@ OLED_ENABLE = yes
 LTO_ENABLE = yes
 
 # Debugging
-CONSOLE_ENABLE = no
+CONSOLE_ENABLE = yes
 
 # Required for OLED
 WPM_ENABLE = yes  # used in Rocket Ship Animation

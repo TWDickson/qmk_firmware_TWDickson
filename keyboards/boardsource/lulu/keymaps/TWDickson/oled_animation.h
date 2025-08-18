@@ -1,4 +1,3 @@
-// oled_animation.h
 #pragma once
 
 #include QMK_KEYBOARD_H

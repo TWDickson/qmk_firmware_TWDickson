@@ -43,7 +43,7 @@ static uint32_t fade_timer = 0;
 static uint32_t sync_timer = 0;
 static uint32_t last_successful_sync = 0;
 
-static bool led_active = true;
+bool led_active = true;
 bool oled_panel_active = true;  // To share with other functions
 static bool fade_running = false;
 static uint16_t fade_step = 0;
@@ -54,7 +54,7 @@ static bool startup_complete = false;
 static bool sync_initialized = false;
 
 // Debug flag to enable verbose logging
-static bool debug_sync = true;
+static bool debug_sync = false;
 
 // Slave-side handler for user sync
 void timeout_sync_slave_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data) {
@@ -145,7 +145,7 @@ bool sync_timeout_data(void) {
 
         // Log occasional sync attempts
         static uint8_t sync_attempt_count = 0;
-        if (sync_attempt_count++ % 10 == 0 || debug_sync) {
+        if (debug_sync) {
             uprintf("Master sending sync #%d. OLED: %s, LEDs: %s, Brightness: %d\n",
                    sync_attempt_count,
                    oled_panel_active ? "ON" : "OFF",

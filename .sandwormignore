@@ -1,0 +1,9 @@
+*
+!keyboards/boardsource/lulu/
+!keyboards/boardsource/lulu/**
+!/keyboards/boardsource/lib
+!/keyboards/boardsource/lib/**
+
+# Re-ignore the avr subfolder
+keyboards/boardsource/lulu/avr/
+keyboards/boardsource/lulu/avr/**

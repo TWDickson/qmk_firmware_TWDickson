@@ -7,19 +7,24 @@
 #include <stdbool.h>
 #include "lib/oled.h"
 #include "timeout_fade.h" // Include the timeout_fade header for OLED functions
+#include "keymap.h" // Layer state
 
 unsigned int state = 0;
 
 // Your rendering function
+// Enhanced render_space function with retro GAME overlay (corrected for OLED rotation)
 static void render_space(bool debug) {
     char wpm = get_current_wpm();
+    bool game_mode = (biton(default_layer_state) == _GAME);
 
     if (debug) {
-        printf("Render Space: %d, State: %d\n", wpm, state);
+        printf("Render Space: %d, State: %d, Game Mode: %s\n", wpm, state, game_mode ? "ON" : "OFF");
     }
 
     char render_row[128];
     int i;
+
+    // Row 1 (top row on master, bottom row on rotated secondary)
     oled_set_cursor(0,0);
     for(i=0; i<wpm/4; i++) {
         render_row[i] = pgm_read_byte(space_row_1+i+state);
@@ -28,10 +33,46 @@ static void render_space(bool debug) {
         render_row[i] = (pgm_read_byte(space_row_1+i+state)&pgm_read_byte(mask_row_1+i-wpm/4)) | pgm_read_byte(ship_row_1+i-wpm/4);
     };
 
+    // Add GAME overlay to row 1 if in game mode (this will be BOTTOM of text on rotated display)
+    if (game_mode) {
+        // Simple horizontal text pattern for "GAME" using basic pixel patterns
+        // G - position 90-95
+        if (90 < 128) render_row[90] |= 0x7E;  // 01111110
+        if (91 < 128) render_row[91] |= 0x81;  // 10000001
+        if (92 < 128) render_row[92] |= 0x81;  // 10000001
+        if (93 < 128) render_row[93] |= 0x89;  // 10001001
+        if (94 < 128) render_row[94] |= 0x8F;  // 10001111
+        if (95 < 128) render_row[95] |= 0x4E;  // 01001110
+
+        // A - position 96-101
+        if (96 < 128) render_row[96] |= 0xFE;  // 11111110
+        if (97 < 128) render_row[97] |= 0x11;  // 00010001
+        if (98 < 128) render_row[98] |= 0x11;  // 00010001
+        if (99 < 128) render_row[99] |= 0x11;  // 00010001
+        if (100 < 128) render_row[100] |= 0x11; // 00010001
+        if (101 < 128) render_row[101] |= 0xFE; // 11111110
+
+        // M - position 102-107
+        if (102 < 128) render_row[102] |= 0xFF; // 11111111
+        if (103 < 128) render_row[103] |= 0x06; // 00000110
+        if (104 < 128) render_row[104] |= 0x18; // 00011000
+        if (105 < 128) render_row[105] |= 0x18; // 00011000
+        if (106 < 128) render_row[106] |= 0x06; // 00000110
+        if (107 < 128) render_row[107] |= 0xFF; // 11111111
+
+        // E - position 108-113
+        if (108 < 128) render_row[108] |= 0xFF; // 11111111
+        if (109 < 128) render_row[109] |= 0x91; // 10010001
+        if (110 < 128) render_row[110] |= 0x91; // 10010001
+        if (111 < 128) render_row[111] |= 0x91; // 10010001
+        if (112 < 128) render_row[112] |= 0x91; // 10010001
+        if (113 < 128) render_row[113] |= 0x81; // 10000001
+    }
+
     oled_write_raw(render_row, 128);
     if (debug) printf("Row 1 rendered\n");
 
-    // oled_write_raw_P(space_row_1, 128);
+    // Row 2
     oled_set_cursor(0,1);
     for(i=0; i<wpm/4; i++) {
         render_row[i] = pgm_read_byte(space_row_2+i+state);
@@ -39,9 +80,11 @@ static void render_space(bool debug) {
     for(i=wpm/4; i<128; i++) {
         render_row[i] = (pgm_read_byte(space_row_2+i+state)&pgm_read_byte(mask_row_2+i-wpm/4)) | pgm_read_byte(ship_row_2+i-wpm/4);
     };
+
     oled_write_raw(render_row, 128);
     if (debug) printf("Row 2 rendered\n");
 
+    // Row 3
     oled_set_cursor(0,2);
     for(i=0; i<wpm/4; i++) {
         render_row[i] = pgm_read_byte(space_row_3+i+state);
@@ -53,6 +96,7 @@ static void render_space(bool debug) {
     oled_write_raw(render_row, 128);
     if (debug) printf("Row 3 rendered\n");
 
+    // Row 4 (bottom row on master, TOP row on rotated secondary)
     oled_set_cursor(0,3);
     for(i=0; i<wpm/4; i++) {
         render_row[i] = pgm_read_byte(space_row_4+i+state);
@@ -167,6 +211,7 @@ bool oled_task_user_animation(bool debug) {
         if (debug) {
             // printf("OLED Task User Animation - Master side (Layer: %d)\n", current_layer);
         }
+
         render_space(false);
     } else {
         // On secondary half
@@ -227,5 +272,5 @@ void render_bootmagic_status(bool status) {
 bool oled_task_user(void) {
     // Call the function from our animation file
     // printf("OLED Task User - Master: %d\n", is_keyboard_master());
-    return oled_task_user_animation(true);
+    return oled_task_user_animation(false);
 }

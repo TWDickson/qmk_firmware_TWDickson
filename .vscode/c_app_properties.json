@@ -1,0 +1,26 @@
+{
+    "[json]": {
+      "configurations": [
+        {
+          "name": "Mac",
+          "includePath": [
+            "${workspaceFolder}/**",
+            "${workspaceFolder}/quantum/**",
+            "${workspaceFolder}/quantum/keymap_extras/**",
+            "${workspaceFolder}/tmk_core/**"
+          ],
+          "defines": [
+            "RGB_MATRIX_ENABLE",
+            "OLED_ENABLE",
+            "QMK_KEYBOARD_H=\"keyboards/boardsource/lulu/lulu.h\""
+          ],
+          "macFrameworkPath": [],
+          "compilerPath": "/usr/bin/clang",
+          "cStandard": "c11",
+          "cppStandard": "c++17",
+          "intelliSenseMode": "clang-x64"
+        }
+      ],
+      "version": 4
+    }
+  }

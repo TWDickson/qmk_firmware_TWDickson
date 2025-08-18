@@ -10,6 +10,8 @@
 
 // Variables for animation functions
 extern bool oled_panel_active;
+extern bool led_active;
+
 
 // Function prototypes
 void init_timeout_fade(void);

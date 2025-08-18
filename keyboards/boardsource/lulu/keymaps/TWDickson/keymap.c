@@ -1,53 +1,19 @@
 // keymap.c - TWDickson keymap for Boardsource Lulu keyboard
-#include QMK_KEYBOARD_H
-#include <stdbool.h> // For true and false
-#include <stdint.h>  // For uint16_t and other fixed-width integer types
-#include <quantum/color.h> // For RGB Color functions
-#include <config.h>
-#include <print.h> // Debug printing
-#include "oled_animation.h"
-#include "timeout_fade.h"
+#include "keymap.h"
 
-// Define RGB_MATRIX_TIMEOUT in config.h if not already defined
-#ifndef RGB_MATRIX_TIMEOUT
-#define RGB_MATRIX_TIMEOUT
-#endif
-
-enum layers {
-    _QWERTY,
-    _LOWER,
-    _RAISE,
-    _ADJUST
-};
-
-// Boardsource Lulu specific defines
+// Custom Key Definitions
 #define RAISE MO(_RAISE)
 #define LOWER MO(_LOWER)
 #define KC_CAD LALT(LCTL(KC_DEL))  // Ctrl+Alt+Del Macro, I use this for my work laptop
 
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-
 #pragma region: QWERTY
-/* QWERTY
- * ,-----------------------------------------.                    ,-----------------------------------------.
- * | ESC  |   1  |   2  |   3  |   4  |   5  |                    |   6  |   7  |   8  |   9  |   0  |  -   |
- * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * | Tab  |   Q  |   W  |   E  |   R  |   T  |                    |   Y  |   U  |   I  |   O  |   P  |  =   |
- * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
- * |LCTRL |   A  |   S  |   D  |   F  |   G  |-------.    ,-------|   H  |   J  |   K  |   L  |   ;  |  '   |
- * |------+------+------+------+------+------|   [   |    |KC_MPLY|------+------+------+------+------+------|
- * |LShift|   Z  |   X  |   C  |   V  |   B  |-------|    |-------|   N  |   M  |   ,  |   .  |   /  |RShift|
- * `-----------------------------------------/       /     \      \-----------------------------------------'
- *                   | LGUI | LALT |LOWER | /Space  /       \Enter \  |RAISE |BackSP| RGUI |
- *                   |      |      |      |/       /         \      \ |      |      |      |
- *                   `----------------------------'           '------''--------------------'
- */
-
  [_QWERTY] = LAYOUT(
   QK_GESC,   KC_1,   KC_2,    KC_3,    KC_4,    KC_5,                     KC_6,    KC_7,    KC_8,    KC_9,    KC_0, KC_MINS,
   KC_TAB,   KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,                     KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_EQL,
   KC_LCTL,  KC_A,   KC_S,    KC_D,    KC_F,    KC_G,                     KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,
-LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,  RSFT_T(KC_RBRC),
+  LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,  RSFT_T(KC_RBRC),
                           KC_LGUI,    KC_LALT, LOWER, KC_SPC,           KC_ENT,   RAISE,   KC_BSPC, KC_RGUI
 ),
 #pragma endregion
@@ -102,15 +68,15 @@ LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  
 
 #pragma region: Adjust
 /* ADJUST
- * ,----------------------------------------------.                    ,-----------------------------------------.
- * |      |        |       |       |       |      |                    |      |       |      |      |      |      |
- * |------+--------+-------+-------+-------+------|                    |------+-------+------+------+------+------|
- * |      |        |       |       |       |      |                    |      |       |      |      |      |      |
- * |------+--------+-------+-------+-------+------|                    |------+-------+------+------+------+------|
- * |      |RGB_MOD |RGB_HUI|RGB_SAI|RGB_VAI|      |-------.    ,-------|      |       |      |      |      |      |
- * |------+--------+-------+-------+-------+------|RGB_TOG|    |       |------+-------+------+------+------+------|
- * |      |RGB_RMOD|RGB_HUD|RGB_SAD|RGB_VAD|      |-------|    |-------|      |CG_TOGG|      |      |      |      |
- * `-----------------------------------------/       /     \      \-----------------------------------------'
+ * ,-----------------------------------------------.                    ,-----------------------------------------.
+ * |       |        |       |       |       |      |                    |      |       |      |      |      |      |
+ * |-------+--------+-------+-------+-------+------|                    |------+-------+------+------+------+------|
+ * |       |        |       |       |       |      |                    |      |       |      |      |      |      |
+ * |-------+--------+-------+-------+-------+------|                    |------+-------+------+------+------+------|
+ * |KC_CAPS|RGB_MOD |RGB_HUI|RGB_SAI|RGB_VAI|GME MD|-------.    ,-------|      |       |      |      |      |      |
+ * |-------+--------+-------+-------+-------+------|RGB_TOG|    |       |------+-------+------+------+------+------|
+ * |       |RGB_RMOD|RGB_HUD|RGB_SAD|RGB_VAD|      |-------|    |-------|      |CG_TOGG|      |      |      |      |
+ * `------------------------------------------/       /     \      \-----------------------------------------'
  *                   | LAlt | LGUI |LOWER | /Space  /       \Enter \  |RAISE |BackSP| RGUI |
  *                   |      |      |      |/       /         \      \ |      |      |      |
  *                   `----------------------------'           '------''--------------------'
@@ -118,17 +84,45 @@ LSFT_T(KC_LBRC),  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  
   [_ADJUST] = LAYOUT(
   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
-  XXXXXXX, RGB_MOD, RGB_HUI, RGB_SAI, RGB_VAI, XXXXXXX,                   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+  KC_CAPS, RGB_MOD, RGB_HUI, RGB_SAI, RGB_VAI, GAME_TOGGLE,                   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   XXXXXXX, RGB_RMOD, RGB_HUD, RGB_SAD, RGB_VAD, XXXXXXX, RGB_TOG, XXXXXXX, XXXXXXX, CG_TOGG, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
                              _______, _______, _______, _______, _______,  _______, KC_CAD, _______
-  )
+  ),
 #pragma endregion
+
+#pragma region: Game
+/* QWERTY
+ * ,-----------------------------------------.                    ,-----------------------------------------.
+ * | ESC  |   1  |   2  |   3  |   4  |   5  |                    |   6  |   7  |   8  |   9  |   0  |  -   |
+ * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
+ * | Tab  |   Q  |   W  |   E  |   R  |   T  |                    |   Y  |   U  |   I  |   O  |   P  |  =   |
+ * |------+------+------+------+------+------|                    |------+------+------+------+------+------|
+ * |LCTRL |   A  |   S  |   D  |   F  |   G  |-------.    ,-------|   H  |   J  |   K  |   L  |   ;  |  '   |
+ * |------+------+------+------+------+------|   [   |    |KC_MPLY|------+------+------+------+------+------|
+ * |LShift|   Z  |   X  |   C  |   V  |   B  |-------|    |-------|   N  |   M  |   ,  |   .  |   /  |RShift|
+ * `-----------------------------------------/       /     \      \-----------------------------------------'
+ *                   |  NO  | LALT |LOWER | /Space  /       \Enter \  |RAISE |BackSP| RGUI |
+ *                   |      |      |      |/       /         \      \ |      |      |      |
+ *                   `----------------------------'           '------''--------------------'
+ */
+
+[_GAME] = LAYOUT(
+  QK_GESC,   KC_1,   KC_2,    KC_3,    KC_4,    KC_5,                     KC_6,    KC_7,    KC_8,    KC_9,    KC_0, KC_MINS,
+  KC_TAB,   KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,                     KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_EQL,
+  KC_LCTL,  KC_A,   KC_S,    KC_D,    KC_F,    KC_G,                     KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,
+  KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_LBRC,   KC_MPLY,  KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,  KC_RSFT,
+                          KC_NO,    KC_LALT, LOWER, KC_SPC,           KC_ENT,   RAISE,   KC_BSPC, KC_RGUI
+) // Placeholder for game layer
+#pragma endregion
+
 };
+
 
 #pragma region: Encoder Map
 #ifdef ENCODER_MAP_ENABLE
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
   [_QWERTY] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU),  ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
+  [_GAME] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU),  ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
   [_LOWER]  = { ENCODER_CCW_CW(RGB_RMOD, RGB_MOD), ENCODER_CCW_CW(RGB_VAD, RGB_VAI) },
   [_RAISE]  = { ENCODER_CCW_CW(RGB_SAD, RGB_SAI),  ENCODER_CCW_CW(RGB_HUD, RGB_HUI) },
   [_ADJUST] = { ENCODER_CCW_CW(_______, _______),  ENCODER_CCW_CW(_______, _______) }
@@ -175,6 +169,32 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
         // Log the keycode and event
         uprintf("Key pressed: 0x%04X\n", keycode);
+         // Get the key position info
+        uint8_t row = record->event.key.row;
+        uint8_t col = record->event.key.col;
+
+        // Log key info
+        uprintf("Key pressed: 0x%04X at position [%d,%d]\n", keycode, row, col);
+
+        // Find the LED corresponding to this key
+        #ifdef RGB_MATRIX_ENABLE
+        // LED matrix index lookup
+        uint8_t led_index = g_led_config.matrix_co[row][col];
+
+        // If valid LED index found (not 255)
+        if (led_index != NO_LED) {
+            // Get LED position
+            int16_t led_x = g_led_config.point[led_index].x;
+            int16_t led_y = g_led_config.point[led_index].y;
+            uint8_t led_flags = g_led_config.flags[led_index];
+
+            // Log LED info
+            uprintf("  LED: index=%d, x=%d, y=%d, flags=0x%02X\n",
+                    led_index, led_x, led_y, led_flags);
+        } else {
+            uprintf("  No LED mapped to this key position\n");
+        }
+        #endif
 
         // Reset timer on key press
         reset_idle_timer();
@@ -188,9 +208,72 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // Call any OLED-specific keypress handling
         oled_process_key_press(keycode);
         #endif
+
+        switch (keycode) {
+            case RGB_MOD:
+            case RGB_RMOD:
+            case RGB_HUI:
+            case RGB_HUD:
+            case RGB_SAI:
+            case RGB_SAD:
+            case RGB_VAI:
+            case RGB_VAD:
+            case RGB_TOG: {
+                // Get current RGB mode
+                uint8_t mode = rgb_matrix_get_mode();
+
+                // Get current HSV values
+                hsv_t hsv = rgb_matrix_get_hsv();
+
+                // Log the current RGB state
+                uprintf("RGB State - Mode: %d, H: %d, S: %d, V: %d\n",
+                        mode, hsv.h, hsv.s, hsv.v);
+
+                // Optional: Log mode name for better readability
+                const char* mode_name;
+                switch (mode) {
+                    case RGB_MATRIX_SOLID_COLOR: mode_name = "SOLID_COLOR"; break;
+                    case RGB_MATRIX_ALPHAS_MODS: mode_name = "ALPHAS_MODS"; break;
+                    case RGB_MATRIX_GRADIENT_UP_DOWN: mode_name = "GRADIENT_UP_DOWN"; break;
+                    case RGB_MATRIX_GRADIENT_LEFT_RIGHT: mode_name = "GRADIENT_LEFT_RIGHT"; break;
+                    case RGB_MATRIX_BREATHING: mode_name = "BREATHING"; break;
+                    case RGB_MATRIX_BAND_SAT: mode_name = "BAND_SAT"; break;
+                    case RGB_MATRIX_BAND_VAL: mode_name = "BAND_VAL"; break;
+                    default: mode_name = "UNKNOWN"; break;
+                }
+                uprintf("RGB Mode Name: %s\n", mode_name);
+                break;
+            }
+
+            case GAME_TOGGLE:
+                // Toggle the game layer on/off
+                if (biton(default_layer_state) == _GAME) {
+                    set_single_persistent_default_layer(_QWERTY);
+                    uprintf("Game layer OFF\n");
+                } else {
+                    set_single_persistent_default_layer(_GAME);
+                    uprintf("Game layer ON\n");
+                }
+                layer_clear();
+                return false; // Prevent further processing of this keycode
+        }
     } else {
         // Log the key release event
         uprintf("Key released: 0x%04X\n", keycode);
     }
     return true;
+}
+
+bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
+    // Only process if the LED is in the current range to minimize processing
+    if (led_min <= 23 && led_max > 23) {
+        // Check if Caps Lock is active and LEDs are currently active
+        if (host_keyboard_led_state().caps_lock && led_active) {
+            // Only show the Caps Lock indicator if LEDs are active
+            // This will let the LED fade out completely with the timeout
+            rgb_matrix_set_color(23, 255, 0, 0);
+        }
+    }
+
+    return false; // Don't continue to keyboard-level callback
 }
